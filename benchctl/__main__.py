@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # Standard imports
-from multiprocessing import Event
 
 # Third-party imports
 import typer
@@ -28,7 +27,14 @@ def list():
 
 @app.command()
 def connect(mac_address: str):
-	pass
+	with Progress(
+		SpinnerColumn(),
+		TextColumn("[progress.description]{task.description}"),
+		transient=True,
+	) as progress:
+		progress.add_task(description="Connecting...", total=None)
+		EventManager().add_event(ble.Client().connect(mac_address, force=True)).result()
+		EventManager().stop()
 
 def main():
 	app()

@@ -5,6 +5,7 @@ import asyncio
 
 # Local imports
 from . import linux
+from . import exception
 
 DISCOVERY_DEF_TIMEOUT: Final[int] = 5
 
@@ -22,34 +23,60 @@ class Driver(ABC):
 		"""
 		pass
 
+	@abstractmethod
+	async def connect(self, mac_address: str, force: bool) -> None:
+		"""Connects to a peripheral
+
+		Args:
+			mac_address (str): MAC address of the peripheral to connect
+			force (bool): if set, we try to connect directly to the peripheral, discovery is not necessary
+
+		Raises:
+		BluetoothConnectionError: connection failed
+		"""
+		pass
+
 class MockDriver(Driver):
 	"""Mocks the BLE features for test purpose
 	"""
+	def __init__(self) -> None:
+		self.__discovered: list[str] = []
+		self.__connected: Optional[str] = None
 
-	async def discovering(self, timeout: int = 5, filter: Optional[str] = None) -> None:
+	async def discovering(self, timeout: int = DISCOVERY_DEF_TIMEOUT, filter: Optional[str] = None) -> None:
 
 		async def discovery():
 				await asyncio.sleep(0.2) # 0.1s to be close of the realtiming
-				print("[5d:28:8a:4a:3f:73] Discovered, alias = 5D-28-8A-4A-3F-73")
+				print("[fc:0f:e7:69:43:62] Discovered, alias = Bench")
+				if "fc:0f:e7:69:43:62" not in self.__discovered:
+					self.__discovered.append("fc:0f:e7:69:43:62")
 
 		try:
 			await asyncio.wait_for(discovery(), timeout)
 		except asyncio.TimeoutError:
 			pass
+	
+	async def connect(self, mac_address: str, force: bool) -> None:
+		if force:
+			self.__discovered = mac_address
 
+		if mac_address not in self.__discovered:
+			raise exception.BluetoothConnectionError(mac_address)
 
 class LinuxDriver(Driver):
 	"""Implements the BLE features for Linux operating system
 	"""
 
 	def __init__(self) -> None:
-		self._manager = linux.DeviceManager()
+		self.__manager = linux.DeviceManager()
+	
+	def __del__(self) -> None:
+		self.__manager.stop()
 
 	async def discovering(self, timeout: int = DISCOVERY_DEF_TIMEOUT, filter: Optional[str] = None) -> None:
-		async def _timeout():
-			await asyncio.sleep(timeout)
-			self._manager.stop()
-
-		self._manager.start_discovery([filter])
-		asyncio.create_task(_timeout())
-		await asyncio.get_event_loop().run_in_executor(None, self._manager.run)
+		self.__manager.start_discovery([filter])
+		await asyncio.sleep(timeout)
+		self.__manager.stop_discovery()
+	
+	async def connect(self, mac_address, force: bool) -> None:
+		self.__manager.connect(mac_address, force)
