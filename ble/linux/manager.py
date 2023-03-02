@@ -9,6 +9,8 @@ import gatt
 # Local imports
 from . device import Device
 from .. exception import BluetoothConnectionError
+from .. info import DeviceInfo
+from .. driver import Driver
 
 DEFAULT_ADAPTATER: Final[str] = "hci0"
 
@@ -30,9 +32,10 @@ class DeviceManager(gatt.DeviceManager):
 		Args:
 			device (Device): Discovered device
 		"""
+
 		if device.mac_address not in self.__devices:
 			self.__devices[device.mac_address] = device
-			print("[%s] Discovered, alias = %s" % (device.mac_address, device.alias()))
+			Driver.Callback._call(Driver.Event.DEVICE_DISCOVERED, DeviceInfo(device.mac_address, device.alias()))
 
 	def connect(self, mac_address: str, force: bool) -> None:
 		"""Connects to a peripheral

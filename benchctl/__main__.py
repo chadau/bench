@@ -4,12 +4,12 @@
 
 # Third-party imports
 import typer
-import ble
 from bench.gatt import BENCH_GATT_SERVICE_UUID
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 # Local imports
 from . event_manager import EventManager
+from . client        import Client
 
 app = typer.Typer()
 
@@ -21,7 +21,7 @@ def list():
 		transient=True,
 	) as progress:
 		progress.add_task(description="Discovering...", total=None)
-		EventManager().add_event(ble.Client().discovering(filter=BENCH_GATT_SERVICE_UUID)).result()
+		EventManager().add_event(Client().discovering(filter=BENCH_GATT_SERVICE_UUID)).result()
 		EventManager().stop()
 
 
@@ -33,7 +33,7 @@ def connect(mac_address: str):
 		transient=True,
 	) as progress:
 		progress.add_task(description="Connecting...", total=None)
-		EventManager().add_event(ble.Client().connect(mac_address, force=True)).result()
+		EventManager().add_event(Client().connect(mac_address, force=True)).result()
 		EventManager().stop()
 
 def main():

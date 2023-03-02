@@ -1,11 +1,19 @@
+# Standard improts
+import enum
+
 # Third-party imports
 import gatt
+
+# Local imports
+from .. driver import Driver
+from .. info   import DeviceInfo
 
 class Device(gatt.Device):
 
 	def connect_succeeded(self):
 		super().connect_succeeded()
-		print("[%s] Connected" % (self.mac_address))
+		Driver.Callback._call(Driver.Event.DEVICE_CONNECTED, DeviceInfo(self.mac_address, self.alias()))
+
 
 	def connect_failed(self, error):
 		super().connect_failed(error)
@@ -13,7 +21,7 @@ class Device(gatt.Device):
 
 	def disconnect_succeeded(self):
 		super().disconnect_succeeded()
-		print("[%s] Disconnected" % (self.mac_address))
+		Driver.Callback._call(Driver.Event.DEVICE_DISCONNECTED, DeviceInfo(self.mac_address, self.alias()))
 
 	def services_resolved(self):
 		super().services_resolved()

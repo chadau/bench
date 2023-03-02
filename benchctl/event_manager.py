@@ -1,4 +1,4 @@
-# Local imports
+# Standard imports
 import asyncio
 import concurrent.futures
 import threading
@@ -13,18 +13,26 @@ class Singleton(type):
 		return Singleton.__instances[cls]
 
 class EventManager(metaclass=Singleton):
-
+	"""Allow and manage non-blocking operation (async) in a synchrone process
+	"""
 	def __init__(self) -> None:
 		self.__loop = asyncio.new_event_loop()
 		self.__thread = threading.Thread(target=self.__event_loop, name="EventThread")
 		self.__thread.start()
 	
+	def __del__(self) -> None:
+		self.stop()
+	
 	def stop(self):
+		"""Stop the event loop
+		"""
 		self.__loop.call_soon_threadsafe(self.__loop.stop)
 		self.__thread.join()
 		
 
 	def __event_loop(self) -> None:
+		"""Event loop launched in event thread
+		"""
 		asyncio.set_event_loop(self.__loop)
 		self.__loop.run_forever()
 	
